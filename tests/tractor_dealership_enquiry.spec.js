@@ -29,7 +29,7 @@ test("Fill Dealership Enquiry form", async ({ page }) => {
     await page.waitForTimeout(300);
 
     // Select dropdowns
-    await helper.selectByValue('select#tyreBrand', '1');
+    await helper.selectByValue('select#tyreBrand', 'Mahindra');
     await helper.selectByValue('select#selectState', 'Maharashtra');
     await helper.selectByText('select#selectDistrict', 'Pune');
     await helper.selectByText('select#selectTehsil', 'Haveli');

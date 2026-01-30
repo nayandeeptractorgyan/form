@@ -28,7 +28,7 @@ test("Fill Tractor Insurance form", async ({ page }) => {
     await helper.selectByText('select#tractorModel', '475 DI');
 
     // Fill name & mobile
-    await form.locator('input#name').fill("auto-test");
+    await form.locator('input#name').fill("autotest");
     await page.waitForTimeout(300);
     
     await form.locator('input#userMobile').fill(mobileNumber);
