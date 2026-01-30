@@ -16,7 +16,7 @@ test("Fill Dealership Enquiry form", async ({ page }) => {
     const form = page.locator('form').first();
 
     // Fill inputs
-    await form.locator('input#name').fill("auto-test");
+    await form.locator('input#name').fill("autotest");
     await page.waitForTimeout(300);
     
     await form.locator('input#userMobile').fill(mobileNumber);
@@ -29,7 +29,7 @@ test("Fill Dealership Enquiry form", async ({ page }) => {
     await page.waitForTimeout(300);
 
     // Select dropdowns
-    await helper.selectByValue('select#tyreBrand', 'Mahindra');
+    await helper.selectByValue('select#tyreBrand', '1');
     await helper.selectByValue('select#selectState', 'Maharashtra');
     await helper.selectByText('select#selectDistrict', 'Pune');
     await helper.selectByText('select#selectTehsil', 'Haveli');
