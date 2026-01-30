@@ -1,0 +1,25 @@
+{
+  "name": "form-testing",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.58.0"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "playwright": "^1.58.0",
+    "playwright-core": "^1.58.0"
+  },
+  "description": ""
+}

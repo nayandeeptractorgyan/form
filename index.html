@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Playwright Test Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>🎭 Playwright Test Dashboard</h1>
+    <p>Automated Testing Control Center - Manage and monitor your test suites</p>
+  </div>
+
+  <!-- Statistics -->
+  <div class="stats-container">
+    <div class="stat-card">
+      <h3>Total Tests</h3>
+      <div class="number" id="totalTests">6</div>
+    </div>
+    <div class="stat-card">
+      <h3>Passed</h3>
+      <div class="number" style="color: #059669;" id="passedTests">0</div>
+    </div>
+    <div class="stat-card">
+      <h3>Failed</h3>
+      <div class="number" style="color: #dc2626;" id="failedTests">0</div>
+    </div>
+    <div class="stat-card">
+      <h3>Running</h3>
+      <div class="number" style="color: #2563eb;" id="runningTests">0</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-primary" onclick="runAllTests()">▶ Run All Tests</button>
+    <button class="btn btn-secondary" onclick="stopAllTests()">⏸ Stop All</button>
+    <button class="btn btn-danger" onclick="clearResults()">🗑 Clear Results</button>
+    <button class="btn btn-secondary" onclick="toggleOutput()">📊 Toggle Output</button>
+  </div>
+
+  <!-- Test Cards Grid -->
+  <div class="tests-grid" id="testsGrid"></div>
+
+  <!-- Output Container -->
+  <div class="output-container" id="outputContainer">
+    <div class="output-header">
+      <h2>Test Output</h2>
+      <button class="btn btn-secondary" onclick="clearOutput()">Clear</button>
+    </div>
+    <div class="output-content" id="outputContent">
+      Waiting for test execution...
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon"></span>
+  <span class="toast-message" id="toastMessage"></span>
+</div>
+
+<script>
+  // Test configurations
+  const tests = [
+    {
+      id: 'dealership-form',
+      name: 'Dealership Form',
+      description: 'Tests dealership form submission and validation',
+      endpoint: '/run-dealership-form',
+      status: 'idle'
+    },
+    {
+      id: 'review-form',
+      name: 'Review Form',
+      description: 'Validates review form functionality and user feedback',
+      endpoint: '/run-review-form',
+      status: 'idle'
+    },
+    {
+      id: 'tractor-dealership-enquiry',
+      name: 'Tractor Dealership Enquiry',
+      description: 'Tests tractor dealership enquiry workflow',
+      endpoint: '/run-tractor-dealership-enquiry',
+      status: 'idle'
+    },
+    {
+      id: 'tractor-insurance',
+      name: 'Tractor Insurance',
+      description: 'Validates tractor insurance application process',
+      endpoint: '/run-tractor-insurance',
+      status: 'idle'
+    },
+    {
+      id: 'tractor-form',
+      name: 'Tractor Form',
+      description: 'Tests main tractor form submission and processing',
+      endpoint: '/run-tractor-form',
+      status: 'idle'
+    },
+    {
+      id: 'form-health',
+      name: 'whatsapp popup',
+      description: 'Monitors form health and performance metrics',
+      endpoint: '/run-form-health',
+      status: 'idle'
+    }
+  ];
+
+  const API_BASE_URL = 'http://localhost:5000';
+  let runningTestsCount = 0;
+
+  // Initialize dashboard
+  function initDashboard() {
+    const grid = document.getElementById('testsGrid');
+    grid.innerHTML = tests.map(test => `
+      <div class="test-card" id="card-${test.id}">
+        <div class="test-header">
+          <div class="test-name">${test.name}</div>
+          <span class="status-badge status-idle" id="status-${test.id}">Idle</span>
+        </div>
+        <div class="test-description">${test.description}</div>
+        <div class="test-actions">
+          <button class="btn btn-primary" onclick="runSingleTest('${test.id}')">
+            ▶ Run Test
+          </button>
+          <button class="btn btn-secondary" onclick="viewDetails('${test.id}')" style="display: none;" id="details-${test.id}">
+            📄 View Details
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Update statistics
+  function updateStats() {
+    const passed = tests.filter(t => t.status === 'passed').length;
+    const failed = tests.filter(t => t.status === 'failed').length;
+    const running = tests.filter(t => t.status === 'running').length;
+
+    document.getElementById('passedTests').textContent = passed;
+    document.getElementById('failedTests').textContent = failed;
+    document.getElementById('runningTests').textContent = running;
+  }
+
+  // Show toast notification
+  function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    const icon = document.getElementById('toastIcon');
+    const msg = document.getElementById('toastMessage');
+
+    const icons = {
+      success: '✅',
+      error: '❌',
+      info: 'ℹ️',
+      warning: '⚠️'
+    };
+
+    icon.textContent = icons[type] || icons.info;
+    msg.textContent = message;
+    
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // Update test status
+  function updateTestStatus(testId, status) {
+    const test = tests.find(t => t.id === testId);
+    if (test) {
+      test.status = status;
+      const badge = document.getElementById(`status-${testId}`);
+      badge.className = `status-badge status-${status}`;
+      badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      updateStats();
+    }
+  }
+
+  // Append to output
+  function appendOutput(text, testName = '') {
+    const output = document.getElementById('outputContent');
+    const timestamp = new Date().toLocaleTimeString();
+    const prefix = testName ? `[${timestamp}] [${testName}]\n` : `[${timestamp}]\n`;
+    output.textContent += prefix + text + '\n\n' + '─'.repeat(80) + '\n\n';
+    output.scrollTop = output.scrollHeight;
+  }
+
+  // Clear output
+  function clearOutput() {
+    document.getElementById('outputContent').textContent = 'Output cleared.\n';
+  }
+
+  // Toggle output visibility
+  function toggleOutput() {
+    const container = document.getElementById('outputContainer');
+    container.classList.toggle('active');
+  }
+
+  // Run single test
+  async function runSingleTest(testId) {
+    const test = tests.find(t => t.id === testId);
+    if (!test) return;
+
+    updateTestStatus(testId, 'running');
+    appendOutput(`Starting test: ${test.name}`, test.name);
+    showToast(`Running ${test.name}...`, 'info');
+
+    try {
+      const res = await fetch(`${API_BASE_URL}${test.endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (data.status === 'passed') {
+        updateTestStatus(testId, 'passed');
+        appendOutput(`✅ TEST PASSED\n\n${data.output}`, test.name);
+        showToast(`${test.name} passed!`, 'success');
+        test.lastResult = data.output;
+      } else {
+        updateTestStatus(testId, 'failed');
+        appendOutput(`❌ TEST FAILED\n\n${data.error}`, test.name);
+        showToast(`${test.name} failed!`, 'error');
+        test.lastResult = data.error;
+      }
+
+      // Show details button
+      document.getElementById(`details-${testId}`).style.display = 'block';
+
+    } catch (err) {
+      updateTestStatus(testId, 'failed');
+      appendOutput(`❌ ERROR: ${err.message}`, test.name);
+      showToast(`Error running ${test.name}`, 'error');
+    }
+
+    document.getElementById('outputContainer').classList.add('active');
+  }
+
+  // Run all tests
+  async function runAllTests() {
+    showToast('Running all tests...', 'info');
+    clearOutput();
+    
+    for (const test of tests) {
+      await runSingleTest(test.id);
+      // Small delay between tests
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    showToast('All tests completed!', 'success');
+  }
+
+  // Stop all tests (placeholder - actual implementation would need backend support)
+  function stopAllTests() {
+    showToast('Stop functionality requires backend implementation', 'warning');
+  }
+
+  // Clear all results
+  function clearResults() {
+    tests.forEach(test => {
+      updateTestStatus(test.id, 'idle');
+      test.lastResult = null;
+      document.getElementById(`details-${test.id}`).style.display = 'none';
+    });
+    clearOutput();
+    showToast('Results cleared', 'info');
+  }
+
+  // View test details
+  function viewDetails(testId) {
+    const test = tests.find(t => t.id === testId);
+    if (test && test.lastResult) {
+      const output = document.getElementById('outputContent');
+      output.textContent = `${test.name} - Last Result:\n\n${test.lastResult}`;
+      document.getElementById('outputContainer').classList.add('active');
+      output.scrollTop = 0;
+    }
+  }
+
+  // Initialize on load
+  window.addEventListener('DOMContentLoaded', () => {
+    initDashboard();
+    updateStats();
+  });
+</script>
+
+</body>
+</html>
